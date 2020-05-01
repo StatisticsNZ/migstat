@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="John Bryant, Joshua Fairless, Anitra Fraser, Pubudu Senanayake, Munir Shah, and Lucianne Varn" />
+
+<meta name="date" content="2018-09-25" />
+
+<title>Using Package migstat to Calculate Outcomes-Based Migration Statistics</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+</style>
+
+
+
+<link href="data:text/css;charset=utf-8,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23header%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0A%7D%0Apre%20%7B%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%20code%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Using Package ‘migstat’ to Calculate Outcomes-Based Migration Statistics</h1>
+<h4 class="author"><em>John Bryant, Joshua Fairless, Anitra Fraser, Pubudu Senanayake, Munir Shah, and Lucianne Varn</em></h4>
+<h4 class="date"><em>2018-09-25</em></h4>
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>Package <code>migstat</code> provides functions for an outcomes-based classification of border crossings. This vignette demonstrates the use of the functions, by calculating residence and migration statuses for a small made-up set of border crossings.</p>
+</div>
+<div id="outcome-based-rules-for-classifying-migration" class="section level2">
+<h2>Outcome-based rules for classifying migration</h2>
+<p>Outcome-based rules for classifying migration are defined by a threshold duration and a test duration. With a “12/16” rule, for instance, the threshold duration is 12 months and the test duration is 16 months. With a “9/12” rule, the threshold duration is 9 months and the test duration is 12 months.</p>
+<p>Outcome-based rules simultaneously assign residence status and migration status, based on the direction of the border crossing, the person’s residence status before the crossing, and the length of time spent in or out of the country after the crossing. Using <code>V</code> to denote the threshold duration, and <code>W</code> to denote the test duration, an outcome-based migration rule works as follows:</p>
+<pre><code>if (crossing is arrival) {
+    if (person is resident before crossing) {
+        person is resident after crossing, and crossing is not long-term migration
+    }
+    else {
+        if (person spends V out of W months in country after crossing) {
+            person is resident after crossing, and crossing is long-term migration
+        }
+        else {
+            person is non-resident after crossing, and crossing is not long-term migration
+        }
+    }
+}
+else {
+    if (person is resident before crossing) {
+        if (person spends V out of W months out of the country after crossing) {
+            person is non-resident after crossing, and crossing is long-term migration
+        }
+        else {
+            person is resident after crossing, and crossing is not long-term migration
+        }
+    }
+    else {
+        person is non-resident after crossing, and crossing is not long-term migration
+    }
+}</code></pre>
+<p>Outcome-based rules are complicated because they deal simultaneously with two sorts of units: border crossings and people.</p>
+</div>
+<div id="packages" class="section level2">
+<h2>Packages</h2>
+<p>In addition to <code>migstat</code>, we need to load some packages from the <a href="www.tidyverse.org">tidyverse</a>.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(migstat)
+<span class="kw">library</span>(dplyr)
+<span class="kw">library</span>(tidyr)
+<span class="kw">library</span>(purrr)
+<span class="kw">library</span>(lubridate)
+<span class="kw">library</span>(stringr)</code></pre></div>
+</div>
+<div id="defining-threshold-and-test-durations" class="section level2">
+<h2>Defining threshold and test durations</h2>
+<p>In this vignette, we use a 9/12 rule. In other words, the threshold period is 9 months, and the test period is 12 months - approximately. The “approximately” is necessary because in practice we define the threshold and test periods using days rather than months. Months are difficult to work with, since their lengths vary in complicated ways. Instead of 9 months we use 270 days, and instead of 12 months we use 365 days:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">dur_threshold &lt;-<span class="st"> </span><span class="dv">270</span>
+dur_test &lt;-<span class="st"> </span><span class="dv">365</span></code></pre></div>
+</div>
+<div id="input-data" class="section level2">
+<h2>Input Data</h2>
+<p>We use some made-up data, which is included in the <code>migstat</code> package.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">crossings &lt;-<span class="st"> </span>migstat<span class="op">::</span>border_crossings <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">as_data_frame</span>()
+crossings
+<span class="co">#&gt; # A tibble: 24 x 6</span>
+<span class="co">#&gt;    crossing_id name  passport_no datetime_crossing   direction res_status_default</span>
+<span class="co">#&gt;          &lt;int&gt; &lt;chr&gt; &lt;chr&gt;       &lt;chr&gt;               &lt;chr&gt;                  &lt;int&gt;</span>
+<span class="co">#&gt;  1           1 Cai   C103        2009-05-02 07:23:41 Arrival                    1</span>
+<span class="co">#&gt;  2           2 Amy   A101        2009-05-18 12:01:33 Arrival                    0</span>
+<span class="co">#&gt;  3           3 Amy   A101        2009-05-25 01:23:54 Departure                  0</span>
+<span class="co">#&gt;  4           4 Eisha E105        2009-10-06 13:09:33 Departure                  1</span>
+<span class="co">#&gt;  5           5 Eisha E105        2009-10-21 21:51:03 Arrival                    1</span>
+<span class="co">#&gt;  6           6 Cai   X200        2010-02-15 19:23:04 Departure                  1</span>
+<span class="co">#&gt;  7           7 David D104        2010-02-16 18:32:03 Departure                  1</span>
+<span class="co">#&gt;  8           8 Cai   C103        2010-02-25 06:31:28 Arrival                    1</span>
+<span class="co">#&gt;  9           9 Amy   A101        2010-05-13 22:57:44 Arrival                    0</span>
+<span class="co">#&gt; 10          10 Amy   A101        2010-05-20 05:31:54 Departure                  0</span>
+<span class="co">#&gt; # ... with 14 more rows</span></code></pre></div>
+</div>
+<div id="classification-period" class="section level2">
+<h2>Classification period</h2>
+<p>We need to specify the date when we started observing bordering crossing, and the date when we stopped observing. With the <code>crossings</code> dataset, which is much sparser than a real dataset, the first crossing occurs some time after the first day, and the last crossing occurs some time before the last day.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">date_classif_start &lt;-<span class="st"> </span><span class="kw">as.Date</span>(<span class="st">&quot;2009-01-01&quot;</span>)
+date_classif_end &lt;-<span class="st"> </span><span class="kw">as.Date</span>(<span class="st">&quot;2011-12-31&quot;</span>)</code></pre></div>
+<p>We also drop the “time” part of the <code>datetime_crossing</code> variable. All of our calculations are based on dates rather than times - in mathematical terms, we treat time as discrete.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">crossings &lt;-<span class="st"> </span>crossings <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">date_crossing =</span> <span class="kw">as_date</span>(datetime_crossing))</code></pre></div>
+</div>
+<div id="creating-a-personid-variable" class="section level2">
+<h2>Creating a <code>personId</code> variable</h2>
+<p>We need to assemble migration histories for each person in the dataset. To do this, we need to work out which border crossing belongs to which person. It is tempting to do this using names alone. However, this approach would fail in cases where names changed or were misspelt. Consider, for instance, the crossing by “Esha” on 2000-08-27:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">filter</span>(crossings, passport_no <span class="op">==</span><span class="st"> &quot;E105&quot;</span>)
+<span class="co">#&gt; # A tibble: 6 x 7</span>
+<span class="co">#&gt;   crossing_id name  passport_no datetime_crossing   direction res_status_default date_crossing</span>
+<span class="co">#&gt;         &lt;int&gt; &lt;chr&gt; &lt;chr&gt;       &lt;chr&gt;               &lt;chr&gt;                  &lt;int&gt; &lt;date&gt;       </span>
+<span class="co">#&gt; 1           4 Eisha E105        2009-10-06 13:09:33 Departure                  1 2009-10-06   </span>
+<span class="co">#&gt; 2           5 Eisha E105        2009-10-21 21:51:03 Arrival                    1 2009-10-21   </span>
+<span class="co">#&gt; 3          11 Eisha E105        2010-05-28 14:12:32 Departure                  1 2010-05-28   </span>
+<span class="co">#&gt; 4          14 Esha  E105        2010-08-27 16:06:48 Arrival                    1 2010-08-27   </span>
+<span class="co">#&gt; 5          20 Eisha E105        2011-07-13 22:16:54 Departure                  1 2011-07-13   </span>
+<span class="co">#&gt; 6          21 Eisha E105        2011-08-09 13:41:03 Arrival                    1 2011-08-09</span></code></pre></div>
+<p>Similarly, the same person may have more than one passport:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">filter</span>(crossings, name <span class="op">==</span><span class="st"> &quot;Cai&quot;</span>)
+<span class="co">#&gt; # A tibble: 7 x 7</span>
+<span class="co">#&gt;   crossing_id name  passport_no datetime_crossing   direction res_status_default date_crossing</span>
+<span class="co">#&gt;         &lt;int&gt; &lt;chr&gt; &lt;chr&gt;       &lt;chr&gt;               &lt;chr&gt;                  &lt;int&gt; &lt;date&gt;       </span>
+<span class="co">#&gt; 1           1 Cai   C103        2009-05-02 07:23:41 Arrival                    1 2009-05-02   </span>
+<span class="co">#&gt; 2           6 Cai   X200        2010-02-15 19:23:04 Departure                  1 2010-02-15   </span>
+<span class="co">#&gt; 3           8 Cai   C103        2010-02-25 06:31:28 Arrival                    1 2010-02-25   </span>
+<span class="co">#&gt; 4          12 Cai   C103        2010-06-02 15:43:22 Departure                  1 2010-06-02   </span>
+<span class="co">#&gt; 5          17 Cai   C103        2011-01-22 22:43:09 Arrival                    0 2011-01-22   </span>
+<span class="co">#&gt; 6          18 Cai   X200        2011-06-28 11:15:02 Departure                  1 2011-06-28   </span>
+<span class="co">#&gt; 7          19 Cai   C103        2011-07-12 20:15:03 Arrival                    1 2011-07-12</span></code></pre></div>
+<p>Our solution is to link people’s border crossings using a combination of name <em>and</em> passport number:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">crossings &lt;-<span class="st"> </span>crossings <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">personId =</span> <span class="kw">make_person_id</span>(<span class="dt">key1 =</span> name, <span class="dt">key2 =</span> passport_no)) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">arrange</span>(personId)
+crossings
+<span class="co">#&gt; # A tibble: 24 x 8</span>
+<span class="co">#&gt;    crossing_id name  passport_no datetime_crossing   direction res_status_default date_crossing personId</span>
+<span class="co">#&gt;          &lt;int&gt; &lt;chr&gt; &lt;chr&gt;       &lt;chr&gt;               &lt;chr&gt;                  &lt;int&gt; &lt;date&gt;           &lt;int&gt;</span>
+<span class="co">#&gt;  1           1 Cai   C103        2009-05-02 07:23:41 Arrival                    1 2009-05-02           1</span>
+<span class="co">#&gt;  2           6 Cai   X200        2010-02-15 19:23:04 Departure                  1 2010-02-15           1</span>
+<span class="co">#&gt;  3           8 Cai   C103        2010-02-25 06:31:28 Arrival                    1 2010-02-25           1</span>
+<span class="co">#&gt;  4          12 Cai   C103        2010-06-02 15:43:22 Departure                  1 2010-06-02           1</span>
+<span class="co">#&gt;  5          17 Cai   C103        2011-01-22 22:43:09 Arrival                    0 2011-01-22           1</span>
+<span class="co">#&gt;  6          18 Cai   X200        2011-06-28 11:15:02 Departure                  1 2011-06-28           1</span>
+<span class="co">#&gt;  7          19 Cai   C103        2011-07-12 20:15:03 Arrival                    1 2011-07-12           1</span>
+<span class="co">#&gt;  8           2 Amy   A101        2009-05-18 12:01:33 Arrival                    0 2009-05-18           2</span>
+<span class="co">#&gt;  9           3 Amy   A101        2009-05-25 01:23:54 Departure                  0 2009-05-25           2</span>
+<span class="co">#&gt; 10           9 Amy   A101        2010-05-13 22:57:44 Arrival                    0 2010-05-13           2</span>
+<span class="co">#&gt; # ... with 14 more rows</span></code></pre></div>
+<p>The <code>make_person_id</code> function offers more possibilities for building IDs than might be thought. Arguments  and  do not have to be the original fields such as name or passport number. Instead, we can, for instance, make  equal name concatenated to date of birth, and make  equal to name concatenated to passport number, implying that two records belong to the same person if name and date of birth, or name and passport number, match. The appropriate setup for  and  varies from application to application, and we do not discuss it further here.</p>
+<p>Now that we have the <code>personId</code> variable, we no longer need the <code>name</code> and <code>passport_no</code> variables:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">crossings &lt;-<span class="st"> </span>crossings <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">select</span>(<span class="op">-</span>name, <span class="op">-</span>passport_no)
+crossings
+<span class="co">#&gt; # A tibble: 24 x 6</span>
+<span class="co">#&gt;    crossing_id datetime_crossing   direction res_status_default date_crossing personId</span>
+<span class="co">#&gt;          &lt;int&gt; &lt;chr&gt;               &lt;chr&gt;                  &lt;int&gt; &lt;date&gt;           &lt;int&gt;</span>
+<span class="co">#&gt;  1           1 2009-05-02 07:23:41 Arrival                    1 2009-05-02           1</span>
+<span class="co">#&gt;  2           6 2010-02-15 19:23:04 Departure                  1 2010-02-15           1</span>
+<span class="co">#&gt;  3           8 2010-02-25 06:31:28 Arrival                    1 2010-02-25           1</span>
+<span class="co">#&gt;  4          12 2010-06-02 15:43:22 Departure                  1 2010-06-02           1</span>
+<span class="co">#&gt;  5          17 2011-01-22 22:43:09 Arrival                    0 2011-01-22           1</span>
+<span class="co">#&gt;  6          18 2011-06-28 11:15:02 Departure                  1 2011-06-28           1</span>
+<span class="co">#&gt;  7          19 2011-07-12 20:15:03 Arrival                    1 2011-07-12           1</span>
+<span class="co">#&gt;  8           2 2009-05-18 12:01:33 Arrival                    0 2009-05-18           2</span>
+<span class="co">#&gt;  9           3 2009-05-25 01:23:54 Departure                  0 2009-05-25           2</span>
+<span class="co">#&gt; 10           9 2010-05-13 22:57:44 Arrival                    0 2010-05-13           2</span>
+<span class="co">#&gt; # ... with 14 more rows</span></code></pre></div>
+<p>For graphs of the migration histories, along with code to create them, see the <a href="#appendix---plots-of-migration-histories">Appendix</a>.</p>
+</div>
+<div id="recoding-the-direction-variable" class="section level2">
+<h2>Recoding the <code>direction</code> variable</h2>
+<p>One final piece of data preparation is recoding the <code>direction</code> variable. Instead of the <code>direction</code> variable, functions in package <code>migstat</code> use a binary variable called <code>is_arrival</code>.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">crossings &lt;-<span class="st"> </span>crossings <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">is_arrival =</span> <span class="dv">1</span> <span class="op">*</span><span class="st"> </span>(direction <span class="op">==</span><span class="st"> &quot;Arrival&quot;</span>)) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">select</span>(personId, crossing_id, date_crossing, is_arrival, res_status_default)
+crossings
+<span class="co">#&gt; # A tibble: 24 x 5</span>
+<span class="co">#&gt;    personId crossing_id date_crossing is_arrival res_status_default</span>
+<span class="co">#&gt;       &lt;int&gt;       &lt;int&gt; &lt;date&gt;             &lt;dbl&gt;              &lt;int&gt;</span>
+<span class="co">#&gt;  1        1           1 2009-05-02             1                  1</span>
+<span class="co">#&gt;  2        1           6 2010-02-15             0                  1</span>
+<span class="co">#&gt;  3        1           8 2010-02-25             1                  1</span>
+<span class="co">#&gt;  4        1          12 2010-06-02             0                  1</span>
+<span class="co">#&gt;  5        1          17 2011-01-22             1                  0</span>
+<span class="co">#&gt;  6        1          18 2011-06-28             0                  1</span>
+<span class="co">#&gt;  7        1          19 2011-07-12             1                  1</span>
+<span class="co">#&gt;  8        2           2 2009-05-18             1                  0</span>
+<span class="co">#&gt;  9        2           3 2009-05-25             0                  0</span>
+<span class="co">#&gt; 10        2           9 2010-05-13             1                  0</span>
+<span class="co">#&gt; # ... with 14 more rows</span></code></pre></div>
+</div>
+<div id="calculating-days-observed" class="section level2">
+<h2>Calculating days observed</h2>
+<p>We are now ready to calculate the first of the variables describing travel histories. The variable, <code>days_obs</code>, equals (i) the number of days between the border crossing and the end of the observation period, or (ii) the length of the test period - whichever is smallest.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">crossings &lt;-<span class="st"> </span>crossings <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">days_obs =</span> <span class="kw">calc_days_obs</span>(<span class="dt">date_crossing =</span> date_crossing,
+                                  <span class="dt">date_obs_end =</span> date_classif_end,
+                                  <span class="dt">dur_test =</span> dur_test))
+<span class="kw">select</span>(crossings, crossing_id, date_crossing, is_arrival, days_obs)
+<span class="co">#&gt; # A tibble: 24 x 4</span>
+<span class="co">#&gt;    crossing_id date_crossing is_arrival days_obs</span>
+<span class="co">#&gt;          &lt;int&gt; &lt;date&gt;             &lt;dbl&gt;    &lt;int&gt;</span>
+<span class="co">#&gt;  1           1 2009-05-02             1      365</span>
+<span class="co">#&gt;  2           6 2010-02-15             0      365</span>
+<span class="co">#&gt;  3           8 2010-02-25             1      365</span>
+<span class="co">#&gt;  4          12 2010-06-02             0      365</span>
+<span class="co">#&gt;  5          17 2011-01-22             1      343</span>
+<span class="co">#&gt;  6          18 2011-06-28             0      186</span>
+<span class="co">#&gt;  7          19 2011-07-12             1      172</span>
+<span class="co">#&gt;  8           2 2009-05-18             1      365</span>
+<span class="co">#&gt;  9           3 2009-05-25             0      365</span>
+<span class="co">#&gt; 10           9 2010-05-13             1      365</span>
+<span class="co">#&gt; # ... with 14 more rows</span></code></pre></div>
+<p>The function <code>days_obs</code> is in fact very simple. The calculations are carried out in one line:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">pmin</span>(<span class="kw">pmax</span>(date_obs_end <span class="op">-</span><span class="st"> </span>date_crossing, 0L), dur_test)</code></pre></div>
+</div>
+<div id="calculating-days-in-country" class="section level2">
+<h2>Calculating days in country</h2>
+<p>The variable <code>days_in_country</code> gives the number of days that the person spends inside the country between the border crossing and the end of the observation period, though, as with <code>days_obs</code> it is also bounded by the length of the test period. Each entry in <code>days_in_country</code> must be smaller than or equal to the corresponding entry in <code>days_obs</code>.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">crossings &lt;-<span class="st"> </span>crossings <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">days_in_country =</span> <span class="kw">calc_days_in_country</span>(<span class="dt">personId =</span> personId,
+                                                <span class="dt">date_crossing =</span> date_crossing,
+                                                <span class="dt">is_arrival =</span> is_arrival,
+                                                <span class="dt">date_obs_end =</span> date_classif_end,
+                                                <span class="dt">dur_test =</span> dur_test))
+<span class="kw">select</span>(crossings, crossing_id, date_crossing, is_arrival, days_obs, days_in_country)
+<span class="co">#&gt; # A tibble: 24 x 5</span>
+<span class="co">#&gt;    crossing_id date_crossing is_arrival days_obs days_in_country</span>
+<span class="co">#&gt;          &lt;int&gt; &lt;date&gt;             &lt;dbl&gt;    &lt;int&gt;           &lt;int&gt;</span>
+<span class="co">#&gt;  1           1 2009-05-02             1      365             355</span>
+<span class="co">#&gt;  2           6 2010-02-15             0      365             121</span>
+<span class="co">#&gt;  3           8 2010-02-25             1      365             131</span>
+<span class="co">#&gt;  4          12 2010-06-02             0      365             131</span>
+<span class="co">#&gt;  5          17 2011-01-22             1      343             329</span>
+<span class="co">#&gt;  6          18 2011-06-28             0      186             172</span>
+<span class="co">#&gt;  7          19 2011-07-12             1      172             172</span>
+<span class="co">#&gt;  8           2 2009-05-18             1      365              12</span>
+<span class="co">#&gt;  9           3 2009-05-25             0      365               7</span>
+<span class="co">#&gt; 10           9 2010-05-13             1      365               7</span>
+<span class="co">#&gt; # ... with 14 more rows</span></code></pre></div>
+<p>Internally, function <code>calc_days_in_country</code> looks for arrivals, calculating how much time the person spent in the country after each one, up to the limit set by the test duration or observation period.</p>
+</div>
+<div id="deriving-initial-residence-status" class="section level2">
+<h2>Deriving initial residence status</h2>
+<p>As we saw in the <a href="#outcome-based-rules-for-classifying-migration">description of outcome-based rules</a>, if we know a person’s residence status before a border crossing, and have information on that person’s movements after the crossing, then we can infer the person’s residence status after the crossing and the migration status of the crossing. To get this process started, however, we need to know the person’s residence status before their first border crossing.</p>
+<p>It turns out that we can derive a person’s initial residence status based purely on the timing and direction of their border crossings, provided that the person’s first border crossing occurs a sufficiently long time into the observation period. For other people, we need some additional information.</p>
+<div id="case-1-first-crossing-occurs-after-first-dur_threshold-days" class="section level3">
+<h3>Case 1: First crossing occurs after first <code>dur_threshold</code> days</h3>
+<p>We can infer a person’s residence status before their first border crossing, provided that the first border crossing occurs at least <code>dur_threshold</code> days after <code>date_classif_start</code>. For instance, under the 9/12 rule, we can infer the person’s residence status before the first border crossing, if that crossing occurs at least 270 days after <code>date_classif_start</code>.</p>
+<p>Consider a person whose first border crossing occurred at least <code>dur_threshold</code> days after <code>date_classif_start</code>, and whose first crossing was a departure. The person must have spent at least <code>dur_threshold</code> days inside the country before the departure. Under an outcome-based rule, the person had spent sufficiently long inside the country that, regardless of their earlier migration history, they must have been a resident before the departure.</p>
+<p>Conversely, consider a person whose first border crossing occurred at least <code>dur_threshold</code> days after <code>date_classif_start</code>, and whose first crossing was an arrival. The person must have spent at least <code>dur_threshold</code> days outside the country before the arrival, and therefore must have been a non-resident before the arrival</p>
+</div>
+<div id="case-2-first-crossing-occurs-before-first-dur_threshold-days" class="section level3">
+<h3>Case 2: First crossing occurs before first <code>dur_threshold</code> days</h3>
+<p>If a person’s first crossing before <code>dur_threshold</code> days have passed, then we cannot make use of the argument above. Instead, we need to bring in some external information. For instance, if residence was previously calculated using information that people supplied on arrival or departure cards, we could use that. The exact nature of the information will differ from application to application. Here, we simply assume that such information exists. In the <code>crossings</code> data frame, the variable containing the external information is <code>res_status_default</code>.</p>
+</div>
+<div id="calculations" class="section level3">
+<h3>Calculations</h3>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">res_status_initial &lt;-<span class="st"> </span>crossings <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(personId) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">arrange</span>(date_crossing) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">slice</span>(<span class="dv">1</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">ungroup</span>() <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">res_status_initial =</span> <span class="kw">ifelse</span>(date_crossing <span class="op">&lt;</span><span class="st"> </span>date_classif_start <span class="op">+</span><span class="st"> </span><span class="kw">days</span>(dur_threshold),
+                                     res_status_default,
+                                     <span class="dv">1</span> <span class="op">-</span><span class="st"> </span>is_arrival))
+res_status_initial
+<span class="co">#&gt; # A tibble: 6 x 8</span>
+<span class="co">#&gt;   personId crossing_id date_crossing is_arrival res_status_default days_obs days_in_country res_status_initial</span>
+<span class="co">#&gt;      &lt;int&gt;       &lt;int&gt; &lt;date&gt;             &lt;dbl&gt;              &lt;int&gt;    &lt;int&gt;           &lt;int&gt;              &lt;dbl&gt;</span>
+<span class="co">#&gt; 1        1           1 2009-05-02             1                  1      365             355                  1</span>
+<span class="co">#&gt; 2        2           2 2009-05-18             1                  0      365              12                  0</span>
+<span class="co">#&gt; 3        3           4 2009-10-06             0                  1      365             259                  1</span>
+<span class="co">#&gt; 4        4           7 2010-02-16             0                  1      365               0                  1</span>
+<span class="co">#&gt; 5        5          13 2010-08-12             1                  0      365             337                  0</span>
+<span class="co">#&gt; 6        6          22 2011-10-02             1                  0       90              90                  0</span></code></pre></div>
+<p>To keep the <code>res_status_initial</code> data frame tidy, we remove variables we do not need any more. Note that <code>res_status_initial</code> is a person-level variable, not a crossing-level variable, so we identify values using <code>personId</code> rather than <code>crossing_id</code>.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">res_status_initial &lt;-<span class="st"> </span>res_status_initial <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">select</span>(personId, res_status_initial)
+res_status_initial
+<span class="co">#&gt; # A tibble: 6 x 2</span>
+<span class="co">#&gt;   personId res_status_initial</span>
+<span class="co">#&gt;      &lt;int&gt;              &lt;dbl&gt;</span>
+<span class="co">#&gt; 1        1                  1</span>
+<span class="co">#&gt; 2        2                  0</span>
+<span class="co">#&gt; 3        3                  1</span>
+<span class="co">#&gt; 4        4                  1</span>
+<span class="co">#&gt; 5        5                  0</span>
+<span class="co">#&gt; 6        6                  0</span></code></pre></div>
+</div>
+</div>
+<div id="classify-movements" class="section level2">
+<h2>Classify movements</h2>
+<p>We are now ready to classify movements. First we add the values from <code>res_status_initial</code> to the <code>crossings</code> data frame:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">crossings &lt;-<span class="st"> </span>crossings <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">filter</span>(date_crossing <span class="op">&gt;=</span><span class="st"> </span>date_classif_start) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">left_join</span>(res_status_initial, <span class="dt">by =</span> <span class="st">&quot;personId&quot;</span>)
+<span class="kw">select</span>(crossings, personId, crossing_id, res_status_initial)
+<span class="co">#&gt; # A tibble: 24 x 3</span>
+<span class="co">#&gt;    personId crossing_id res_status_initial</span>
+<span class="co">#&gt;       &lt;int&gt;       &lt;int&gt;              &lt;dbl&gt;</span>
+<span class="co">#&gt;  1        1           1                  1</span>
+<span class="co">#&gt;  2        1           6                  1</span>
+<span class="co">#&gt;  3        1           8                  1</span>
+<span class="co">#&gt;  4        1          12                  1</span>
+<span class="co">#&gt;  5        1          17                  1</span>
+<span class="co">#&gt;  6        1          18                  1</span>
+<span class="co">#&gt;  7        1          19                  1</span>
+<span class="co">#&gt;  8        2           2                  0</span>
+<span class="co">#&gt;  9        2           3                  0</span>
+<span class="co">#&gt; 10        2           9                  0</span>
+<span class="co">#&gt; # ... with 14 more rows</span></code></pre></div>
+<p>Adding initial residence status to <em>every</em> border crossing for each person, rather than just the first border crossing for each person, is a little ugly. It is, however, convenient.</p>
+<p>We start by calculating residence status after each movement. The calculations are based by applying the classification rules, including some non-obvious implications of these rules: see [TECHNICAL PAPER] for the details. For some crossings, there is insufficient information to unambiguously assign a residence status after the crossing. In such cases, the residence status is marked as <code>NA</code>.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">crossings &lt;-<span class="st"> </span>crossings <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">res_status_after =</span> <span class="kw">calc_res_status_after</span>(<span class="dt">personId =</span> personId,
+                                                  <span class="dt">is_arrival =</span> is_arrival,
+                                                  <span class="dt">days_in_country =</span> days_in_country,
+                                                  <span class="dt">days_obs =</span> days_obs,
+                                                  <span class="dt">res_status_initial =</span> res_status_initial,
+                                                  <span class="dt">dur_test =</span> dur_test,
+                                                  <span class="dt">dur_threshold =</span> dur_threshold))
+<span class="kw">select</span>(crossings, personId, is_arrival, days_in_country, days_obs, res_status_initial, res_status_after)
+<span class="co">#&gt; # A tibble: 24 x 6</span>
+<span class="co">#&gt;    personId is_arrival days_in_country days_obs res_status_initial res_status_after</span>
+<span class="co">#&gt;       &lt;int&gt;      &lt;dbl&gt;           &lt;int&gt;    &lt;int&gt;              &lt;dbl&gt;            &lt;int&gt;</span>
+<span class="co">#&gt;  1        1          1             355      365                  1                1</span>
+<span class="co">#&gt;  2        1          0             121      365                  1                1</span>
+<span class="co">#&gt;  3        1          1             131      365                  1                1</span>
+<span class="co">#&gt;  4        1          0             131      365                  1                1</span>
+<span class="co">#&gt;  5        1          1             329      343                  1                1</span>
+<span class="co">#&gt;  6        1          0             172      186                  1                1</span>
+<span class="co">#&gt;  7        1          1             172      172                  1                1</span>
+<span class="co">#&gt;  8        2          1              12      365                  0                0</span>
+<span class="co">#&gt;  9        2          0               7      365                  0                0</span>
+<span class="co">#&gt; 10        2          1               7      365                  0                0</span>
+<span class="co">#&gt; # ... with 14 more rows</span></code></pre></div>
+<p>A person’s residence status immediately after a border crossing is identical to the person’s residence status immediately before their next border crossing. We can use this fact, plus residence statuses after each crossing, plus initial residence statuses, to derive residence statuses before each crossing.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">crossings &lt;-<span class="st"> </span>crossings <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">res_status_before =</span> <span class="kw">calc_res_status_before</span>(<span class="dt">personId =</span> personId,
+                                                    <span class="dt">res_status_initial =</span> res_status_initial,
+                                                    <span class="dt">res_status_after =</span> res_status_after))
+<span class="kw">select</span>(crossings, personId, res_status_initial, res_status_after, res_status_before)
+<span class="co">#&gt; # A tibble: 24 x 4</span>
+<span class="co">#&gt;    personId res_status_initial res_status_after res_status_before</span>
+<span class="co">#&gt;       &lt;int&gt;              &lt;dbl&gt;            &lt;int&gt;             &lt;int&gt;</span>
+<span class="co">#&gt;  1        1                  1                1                 1</span>
+<span class="co">#&gt;  2        1                  1                1                 1</span>
+<span class="co">#&gt;  3        1                  1                1                 1</span>
+<span class="co">#&gt;  4        1                  1                1                 1</span>
+<span class="co">#&gt;  5        1                  1                1                 1</span>
+<span class="co">#&gt;  6        1                  1                1                 1</span>
+<span class="co">#&gt;  7        1                  1                1                 1</span>
+<span class="co">#&gt;  8        2                  0                0                 0</span>
+<span class="co">#&gt;  9        2                  0                0                 0</span>
+<span class="co">#&gt; 10        2                  0                0                 0</span>
+<span class="co">#&gt; # ... with 14 more rows</span></code></pre></div>
+<p>If we know a person’s residence status before and after a border crossing, then we can classify the border crossing. If the person’s residence status changed because of the border crossing, then the border crossing is a long-term migration.</p>
+<p>Somewhat counter-intuitively, there are also cases where we do not know the person’s residence status before or after the border crossing, but do know that the status did not change. In these cases, since the residence status did not change, the border crossing is not a long-term migration. [TECHNICAL PAPER] has the details.</p>
+<p>Function <code>is_long_term_mig</code> takes care of the intuitive cases and counter-intuitive cases:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">crossings &lt;-<span class="st"> </span>crossings <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">is_long_term_mig =</span> <span class="kw">calc_is_long_term_mig</span>(<span class="dt">personId =</span> personId,
+                                                  <span class="dt">is_arrival =</span> is_arrival,
+                                                  <span class="dt">res_status_before =</span> res_status_before,
+                                                  <span class="dt">res_status_after =</span> res_status_after,
+                                                  <span class="dt">days_in_country =</span> days_in_country,
+                                                  <span class="dt">days_obs =</span> days_obs,
+                                                  <span class="dt">dur_test =</span> dur_test,
+                                                  <span class="dt">dur_threshold =</span> dur_threshold))
+crossings <span class="op">%&gt;%</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">select</span>(personId, is_arrival, res_status_before, res_status_after, days_in_country,
+         days_obs, is_long_term_mig) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">filter</span>(personId <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">6</span>))
+<span class="co">#&gt; # A tibble: 14 x 7</span>
+<span class="co">#&gt;    personId is_arrival res_status_before res_status_after days_in_country days_obs is_long_term_mig</span>
+<span class="co">#&gt;       &lt;int&gt;      &lt;dbl&gt;             &lt;int&gt;            &lt;int&gt;           &lt;int&gt;    &lt;int&gt;            &lt;int&gt;</span>
+<span class="co">#&gt;  1        1          1                 1                1             355      365                0</span>
+<span class="co">#&gt;  2        1          0                 1                1             121      365                0</span>
+<span class="co">#&gt;  3        1          1                 1                1             131      365                0</span>
+<span class="co">#&gt;  4        1          0                 1                1             131      365                0</span>
+<span class="co">#&gt;  5        1          1                 1                1             329      343                0</span>
+<span class="co">#&gt;  6        1          0                 1                1             172      186                0</span>
+<span class="co">#&gt;  7        1          1                 1                1             172      172                0</span>
+<span class="co">#&gt;  8        2          1                 0                0              12      365                0</span>
+<span class="co">#&gt;  9        2          0                 0                0               7      365                0</span>
+<span class="co">#&gt; 10        2          1                 0                0               7      365                0</span>
+<span class="co">#&gt; 11        2          0                 0                0               0      365                0</span>
+<span class="co">#&gt; 12        2          1                 0               NA               8       34               NA</span>
+<span class="co">#&gt; 13        2          0                NA               NA               0       26                0</span>
+<span class="co">#&gt; 14        6          1                 0               NA              90       90               NA</span></code></pre></div>
+<p>We have now classified as many border crossings as we can, based only on the outcome-based rules. There still some border crossings that are unclassified, as indicated by the <code>NA</code>s in the <code>is_long_term_mig</code> column. To classify these crossings, we need to take some other approach, such as using a statistical model. This is, however, outside the scope of the <code>migstat</code> package.</p>
+</div>
+<div id="appendix---plots-of-migration-histories" class="section level2">
+<h2>Appendix - Plots of migration histories</h2>
+<p>Package <code>migstat</code> contains a function called <code>plot_mig_hist</code> for plotting migration histories. Plots for the six people in our dataset are generated as follows:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">plot_one_person &lt;-<span class="st"> </span><span class="cf">function</span>(personId, mig_hist) {
+  <span class="kw">plot_mig_hist</span>(<span class="dt">date_crossing =</span> mig_hist<span class="op">$</span>date_crossing, 
+                <span class="dt">is_arrival =</span> mig_hist<span class="op">$</span>is_arrival,
+                <span class="dt">date_first =</span> date_classif_start,
+                <span class="dt">date_last =</span> date_classif_end,
+                <span class="dt">show_date =</span> <span class="ot">FALSE</span>, 
+                <span class="dt">cex =</span> <span class="fl">0.8</span>)
+  <span class="kw">mtext</span>(<span class="dt">text =</span> <span class="kw">sprintf</span>(<span class="st">&quot;personId: %d&quot;</span>, personId),
+        <span class="dt">line =</span> <span class="fl">1.5</span>)
+}
+old_par &lt;-<span class="st"> </span><span class="kw">par</span>(<span class="dt">mfrow =</span> <span class="kw">c</span>(<span class="dv">6</span>, <span class="dv">1</span>))
+mig_histories &lt;-<span class="st"> </span>migstat<span class="op">::</span>border_crossings <span class="op">%&gt;%</span><span class="st"> </span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">personId =</span> <span class="kw">make_person_id</span>(<span class="dt">key1 =</span> name, <span class="dt">key2 =</span> passport_no),
+         <span class="dt">date_crossing =</span> <span class="kw">as_date</span>(datetime_crossing),
+         <span class="dt">is_arrival =</span> direction <span class="op">==</span><span class="st"> &quot;Arrival&quot;</span>) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">nest</span>(<span class="op">-</span>personId)
+personIds &lt;-<span class="st"> </span><span class="kw">pull</span>(mig_histories, personId)
+mig_hists &lt;-<span class="st"> </span><span class="kw">pull</span>(mig_histories, data)
+<span class="kw">walk2</span>(personIds, mig_hists, plot_one_person)</code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">par</span>(old_par)</code></pre></div>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

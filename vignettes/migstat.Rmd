@@ -1,0 +1,323 @@
+---
+title: "Using Package 'migstat' to Calculate Outcomes-Based Migration Statistics"
+author: "John Bryant, Joshua Fairless, Anitra Fraser, Pubudu Senanayake, Munir Shah, and Lucianne Varn"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{P}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+options(width = 150)
+```
+
+## Introduction
+
+Package `migstat` provides functions for an outcomes-based classification of border crossings.  This vignette demonstrates the use of the functions, by calculating residence and migration statuses for a small made-up set of border crossings.
+
+## Outcome-based rules for classifying migration
+
+Outcome-based rules for classifying migration are defined by a threshold duration and a test duration. With a "12/16" rule, for instance, the threshold duration is 12 months and the test duration is 16 months. With a "9/12" rule, the threshold duration is 9 months and the test duration is 12 months.
+
+Outcome-based rules simultaneously assign residence status and migration status, based on the direction of the border crossing, the person's residence status before the crossing, and the length of time spent in or out of the country after the crossing.  Using `V` to denote the threshold duration, and `W` to denote the test duration, an outcome-based migration rule works as follows:
+
+```
+if (crossing is arrival) {
+    if (person is resident before crossing) {
+        person is resident after crossing, and crossing is not long-term migration
+    }
+    else {
+        if (person spends V out of W months in country after crossing) {
+            person is resident after crossing, and crossing is long-term migration
+        }
+        else {
+            person is non-resident after crossing, and crossing is not long-term migration
+        }
+    }
+}
+else {
+    if (person is resident before crossing) {
+        if (person spends V out of W months out of the country after crossing) {
+            person is non-resident after crossing, and crossing is long-term migration
+        }
+        else {
+            person is resident after crossing, and crossing is not long-term migration
+        }
+    }
+    else {
+        person is non-resident after crossing, and crossing is not long-term migration
+    }
+}
+```
+Outcome-based rules are complicated because they deal simultaneously with two sorts of units: border crossings and people.
+
+## Packages
+
+In addition to `migstat`, we need to load some packages from the [tidyverse](www.tidyverse.org).
+
+```{r, message = FALSE}
+library(migstat)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(lubridate)
+library(stringr)
+```
+
+## Defining threshold and test durations
+
+In this vignette, we use a 9/12 rule. In other words, the threshold period is 9 months, and the test period is 12 months - approximately. The "approximately" is necessary because in practice we define the threshold and test periods using days rather than months. Months are difficult to work with, since their lengths vary in complicated ways. Instead of 9 months we use 270 days, and instead of 12 months we use 365 days:
+```{r}
+dur_threshold <- 270
+dur_test <- 365
+```
+
+## Input Data
+
+We use some made-up data, which is included in the `migstat` package.
+
+```{r}
+crossings <- migstat::border_crossings %>%
+  as_data_frame()
+crossings
+```
+
+## Classification period
+
+We need to specify the date when we started observing bordering crossing, and the date when we stopped observing. With the `crossings` dataset, which is much sparser than a real dataset, the first crossing occurs some time after the first day, and the last crossing occurs some time before the last day.
+
+```{r}
+date_classif_start <- as.Date("2009-01-01")
+date_classif_end <- as.Date("2011-12-31")
+```
+
+We also drop the "time" part of the `datetime_crossing` variable. All of our calculations are based on dates rather than times - in mathematical terms, we treat time as discrete.
+
+```{r}
+crossings <- crossings %>%
+  mutate(date_crossing = as_date(datetime_crossing))
+```
+
+
+## Creating a `personId` variable
+
+We need to assemble migration histories for each person in the dataset. To do this, we need to work out which border crossing belongs to which person. It is tempting to do this using names alone. However, this approach would fail in cases where names changed or were misspelt. Consider, for instance, the crossing by "Esha" on 2000-08-27:
+
+```{r}
+filter(crossings, passport_no == "E105")
+```
+
+Similarly, the same person may have more than one passport:
+
+```{r}
+filter(crossings, name == "Cai")
+```
+
+Our solution is to link people's border crossings using a combination of name *and* passport number:
+
+```{r}
+crossings <- crossings %>%
+  mutate(personId = make_person_id(key1 = name, key2 = passport_no)) %>%
+  arrange(personId)
+crossings
+```
+
+The `make_person_id` function offers more possibilities for building IDs than might be thought. Arguments \code{key1} and \code{key2} do not have to be the original fields such as name or passport number. Instead, we can, for instance, make \code{key1} equal name concatenated to date of birth, and make \code{key2} equal to name concatenated to passport number, implying that two records belong to the same person if name and date of birth, or name and passport number, match.  The appropriate setup for \code{key1} and \code{key2} varies from application to application, and we do not discuss it further here.
+
+Now that we have the `personId` variable, we no longer need the `name` and `passport_no` variables:
+
+```{r}
+crossings <- crossings %>%
+  select(-name, -passport_no)
+crossings
+```
+
+For graphs of the migration histories, along with code to create them, see the [Appendix](#appendix---plots-of-migration-histories).
+
+
+## Recoding the `direction` variable
+
+One final piece of data preparation is recoding the `direction` variable. Instead of the `direction` variable, functions in package `migstat` use a binary variable called `is_arrival`.
+
+```{r}
+crossings <- crossings %>%
+  mutate(is_arrival = 1 * (direction == "Arrival")) %>%
+  select(personId, crossing_id, date_crossing, is_arrival, res_status_default)
+crossings
+```
+
+
+## Calculating days observed
+
+We are now ready to calculate the first of the variables describing travel histories. The variable, `days_obs`, equals (i) the number of days between the border crossing and the end of the observation period, or (ii) the length of the test period -  whichever is smallest.
+
+```{r}
+crossings <- crossings %>%
+  mutate(days_obs = calc_days_obs(date_crossing = date_crossing,
+                                  date_obs_end = date_classif_end,
+                                  dur_test = dur_test))
+select(crossings, crossing_id, date_crossing, is_arrival, days_obs)
+```
+
+The function `days_obs` is in fact very simple.  The calculations are carried out in one line:
+```{r, eval = FALSE}
+pmin(pmax(date_obs_end - date_crossing, 0L), dur_test)
+```
+
+
+## Calculating days in country
+
+The variable `days_in_country` gives the number of days that the person spends inside the country between the border crossing and the end of the observation period, though, as with `days_obs` it is also bounded by the length of the test period. Each entry in `days_in_country` must be smaller than or equal to the corresponding entry in `days_obs`.
+
+```{r}
+crossings <- crossings %>%
+  mutate(days_in_country = calc_days_in_country(personId = personId,
+                                                date_crossing = date_crossing,
+                                                is_arrival = is_arrival,
+                                                date_obs_end = date_classif_end,
+                                                dur_test = dur_test))
+select(crossings, crossing_id, date_crossing, is_arrival, days_obs, days_in_country)
+```
+
+Internally, function `calc_days_in_country` looks for arrivals, calculating how much time the person spent in the country after each one, up to the limit set by the test duration or observation period.
+
+
+## Deriving initial residence status
+
+As we saw in the [description of outcome-based rules](#outcome-based-rules-for-classifying-migration), if we know a person's residence status before a border crossing, and have information on that person's movements after the crossing, then we can infer the person's residence status after the crossing and the migration status of the crossing.  To get this process started, however, we need to know the person's residence status before their first border crossing.
+
+It turns out that  we can derive a person's initial residence status based purely on the timing and direction of their border crossings, provided that the person's first border crossing occurs a sufficiently long time into the observation period. For other people, we need some additional information.
+
+### Case 1: First crossing occurs after first `dur_threshold` days
+
+We can infer a person's residence status before their first border crossing, provided that the first border crossing occurs at least `dur_threshold` days after `date_classif_start`. For instance, under the 9/12 rule, we can infer the person's residence status before the first border crossing, if that crossing occurs at least 270 days after `date_classif_start`. 
+
+Consider a person whose first border crossing occurred at least `dur_threshold` days after `date_classif_start`, and whose first crossing was a departure. The person must have spent at least `dur_threshold` days inside the country before the departure.  Under an outcome-based rule, the person had spent sufficiently long inside the country that, regardless of their earlier migration history, they must have been a resident before the departure.
+
+Conversely, consider a person whose first border crossing occurred at least `dur_threshold` days after `date_classif_start`, and whose first crossing was an arrival. The person must have spent at least `dur_threshold` days outside the country before the arrival, and therefore must have been a non-resident before the arrival
+
+
+### Case 2: First crossing occurs before first `dur_threshold` days
+
+If a person's first crossing before `dur_threshold` days have passed, then we cannot make use of the argument above. Instead, we need to bring in some external information.  For instance, if residence was previously calculated using information that people supplied on arrival or departure cards, we could use that.  The exact nature of the information will differ from application to application. Here, we simply assume that such information exists. In the `crossings` data frame, the variable containing the external information is `res_status_default`. 
+
+
+### Calculations
+
+
+
+```{r}
+res_status_initial <- crossings %>%
+  group_by(personId) %>%
+  arrange(date_crossing) %>%
+  slice(1) %>%
+  ungroup() %>%
+  mutate(res_status_initial = ifelse(date_crossing < date_classif_start + days(dur_threshold),
+                                     res_status_default,
+                                     1 - is_arrival))
+res_status_initial
+```
+
+
+To keep the `res_status_initial` data frame tidy, we remove variables we do not need any more. Note that `res_status_initial` is a person-level variable, not a crossing-level variable, so we identify values using `personId` rather than `crossing_id`.
+
+```{r}
+res_status_initial <- res_status_initial %>%
+  select(personId, res_status_initial)
+res_status_initial
+```
+
+
+
+## Classify movements
+
+We are now ready to classify movements.  First we add the values from `res_status_initial` to the `crossings` data frame:
+```{r}
+crossings <- crossings %>%
+  filter(date_crossing >= date_classif_start) %>%
+  left_join(res_status_initial, by = "personId")
+select(crossings, personId, crossing_id, res_status_initial)
+```
+Adding initial residence status to *every* border crossing for each person, rather than just the first border crossing for each person, is a little ugly. It is, however, convenient.
+
+We start by calculating residence status after each movement. The calculations are based by applying the classification rules, including some non-obvious implications of these rules: see [TECHNICAL PAPER] for the details.  For some crossings, there is insufficient information to unambiguously assign a residence status after the crossing. In such cases, the residence status is marked as `NA`.
+
+```{r}
+crossings <- crossings %>%
+  mutate(res_status_after = calc_res_status_after(personId = personId,
+                                                  is_arrival = is_arrival,
+                                                  days_in_country = days_in_country,
+                                                  days_obs = days_obs,
+                                                  res_status_initial = res_status_initial,
+                                                  dur_test = dur_test,
+                                                  dur_threshold = dur_threshold))
+select(crossings, personId, is_arrival, days_in_country, days_obs, res_status_initial, res_status_after)
+```
+
+A person's residence status immediately after a border crossing is identical to the person's residence status immediately before their next border crossing. We can use this fact, plus residence statuses after each crossing, plus initial residence statuses, to derive residence statuses before each crossing.
+
+```{r}
+crossings <- crossings %>%
+  mutate(res_status_before = calc_res_status_before(personId = personId,
+                                                    res_status_initial = res_status_initial,
+                                                    res_status_after = res_status_after))
+select(crossings, personId, res_status_initial, res_status_after, res_status_before)
+```
+
+If we know a person's residence status before and after a border crossing, then we can classify the border crossing. If the person's residence status changed because of the border crossing, then the border crossing is a long-term migration.
+
+Somewhat counter-intuitively, there are also cases where we do not know the person's residence status before or after the border crossing, but do know that the status did not change. In these cases, since the residence status did not change, the border crossing is not a long-term migration.  [TECHNICAL PAPER] has the details. 
+
+Function `is_long_term_mig` takes care of the intuitive cases and counter-intuitive cases:
+```{r}
+crossings <- crossings %>%
+  mutate(is_long_term_mig = calc_is_long_term_mig(personId = personId,
+                                                  is_arrival = is_arrival,
+                                                  res_status_before = res_status_before,
+                                                  res_status_after = res_status_after,
+                                                  days_in_country = days_in_country,
+                                                  days_obs = days_obs,
+                                                  dur_test = dur_test,
+                                                  dur_threshold = dur_threshold))
+crossings %>% 
+  select(personId, is_arrival, res_status_before, res_status_after, days_in_country,
+         days_obs, is_long_term_mig) %>%
+  filter(personId %in% c(1, 2, 6))
+```
+
+We have now classified as many border crossings as we can, based only on the outcome-based rules. There still some border crossings that are unclassified, as indicated by the `NA`s in the `is_long_term_mig` column. To classify these crossings, we need to take some other approach, such as using a statistical model.  This is, however, outside the scope of the `migstat` package.
+
+
+## Appendix - Plots of migration histories
+
+Package `migstat` contains a function called `plot_mig_hist` for plotting migration histories. Plots for the six people in our dataset are generated as follows:
+
+```{r, fig.width = 7.15, fig.height = 10}
+plot_one_person <- function(personId, mig_hist) {
+  plot_mig_hist(date_crossing = mig_hist$date_crossing, 
+                is_arrival = mig_hist$is_arrival,
+                date_first = date_classif_start,
+                date_last = date_classif_end,
+                show_date = FALSE, 
+                cex = 0.8)
+  mtext(text = sprintf("personId: %d", personId),
+        line = 1.5)
+}
+old_par <- par(mfrow = c(6, 1))
+mig_histories <- migstat::border_crossings %>% 
+  mutate(personId = make_person_id(key1 = name, key2 = passport_no),
+         date_crossing = as_date(datetime_crossing),
+         is_arrival = direction == "Arrival") %>%
+  nest(-personId)
+personIds <- pull(mig_histories, personId)
+mig_hists <- pull(mig_histories, data)
+walk2(personIds, mig_hists, plot_one_person)
+par(old_par)
+```
+

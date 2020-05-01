@@ -1,0 +1,46 @@
+Package: migstat
+Type: Package
+Title: Calculation of Residence and Migration Statuses Using Migration Histories
+Version: 1.0.6
+Authors@R: c(
+    person(given = "John",
+           family = "Bryant",
+	         email = "john.bryant@stats.govt.nz",
+	         role = c("cre", "aut")),
+    person(given = "Joshua",
+           family = "Fairless",
+	         email = "joshua.fairless@stats.govt.nz",
+	         role = "aut"),
+    person(given = "Anitra",
+           family = "Fraser",
+	         email = "anitra.fraser@stats.govt.nz",
+	         role = "aut"),
+    person(given = "Pubudu",
+           family = "Senanake",
+	         role = "aut"),
+    person(given = "Munir",
+           family = "Shah",
+	         role = "aut"),
+	  person(given = "Lucianne",
+           family = "Varn",
+	         role = "aut"))
+Description: Functions for calculating migration status under  rules
+    based on migration history, such as the 12/16 rule.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+LinkingTo: Rcpp
+RoxygenNote: 6.1.0
+Imports: Rcpp,
+    lubridate,
+    methods,
+    parallel
+Suggests: dplyr,
+    knitr,
+    purrr,
+    purrrlyr,
+    rmarkdown,
+    stringr,
+    testthat,
+    tidyr
+VignetteBuilder: knitr
